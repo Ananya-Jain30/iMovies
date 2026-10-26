@@ -100,6 +100,8 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [apiOnline, setApiOnline] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+const [registerName, setRegisterName] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginBusy, setLoginBusy] = useState(false);
@@ -123,34 +125,57 @@ const [showPassword, setShowPassword] = useState(false);
   const featured = movies.find(m=>m.featured) || movies[0];
   const notify = text => { setToast(text); window.setTimeout(()=>setToast(''),2600); };
   const toggleSaved = id => {setSaved(old=>old.includes(id)?old.filter(x=>x!==id):[...old,id]);notify(saved.includes(id)?'Removed from your watchlist':'Added to your watchlist');};
-  const handleLogin = async (e) => {
+  
+
+const handleLogin = async (e) => {
   e.preventDefault();
   setLoginBusy(true);
   setLoginError('');
 
   try {
-    const response = await fetch(`${API}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: loginEmail.trim(),
-        password: loginPassword
-      })
-    });
+    const isRegister = authMode === 'register';
+
+    const response = await fetch(
+      `${API}/auth/${isRegister ? 'register' : 'login'}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          isRegister
+            ? {
+                name: registerName.trim(),
+                email: loginEmail.trim(),
+                password: loginPassword,
+              }
+            : {
+                email: loginEmail.trim(),
+                password: loginPassword,
+              }
+        ),
+      }
+    );
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Login failed.');
+      throw new Error(data.message || 'Authentication failed.');
     }
 
     localStorage.setItem('imoviesToken', data.token);
     localStorage.setItem('imoviesUser', JSON.stringify(data.user));
+
     setCurrentUser(data.user);
     setLoginOpen(false);
     setLoginPassword('');
     setLoginEmail('');
-    notify(`Welcome back, ${data.user.name}!`);
+    setRegisterName('');
+    setAuthMode('login');
+
+    notify(
+      isRegister
+        ? `Welcome to iMovies, ${data.user.name}!`
+        : `Welcome back, ${data.user.name}!`
+    );
   } catch (error) {
     setLoginError(
       error instanceof TypeError
@@ -161,6 +186,7 @@ const [showPassword, setShowPassword] = useState(false);
     setLoginBusy(false);
   }
 };
+
 
 const handleLogout = () => {
   localStorage.removeItem('imoviesToken');
@@ -258,9 +284,31 @@ const handleLogout = () => {
 
         <span className="eyebrow">WELCOME BACK</span>
         <h2>Ready for <em>movie night?</em></h2>
-        <p>Log in to continue to iMovies.</p>
+        <p>
+  {authMode === 'login'
+    ? 'Log in to continue to iMovies.'
+    : 'Create an account to start your movie journey.'}
+        </p>
 
         <form onSubmit={handleLogin}>
+          
+
+  {authMode === 'register' && (
+    <label className="field-label">
+      FULL NAME
+      <input
+        type="text"
+        value={registerName}
+        onChange={e => setRegisterName(e.target.value)}
+        placeholder="Enter your full name"
+        autoComplete="name"
+        required
+      />
+    </label>
+  )}
+
+  
+
           <label className="field-label">
             EMAIL ADDRESS
             <input
@@ -304,14 +352,30 @@ const handleLogout = () => {
             className="primary-btn full"
             disabled={loginBusy}
           >
-            {loginBusy ? 'Logging in…' : 'Login'}
+            {loginBusy
+  ? (authMode === 'register' ? 'Creating account…' : 'Logging in…')
+  : (authMode === 'register' ? 'Create account' : 'Login')}
             {!loginBusy && <ArrowRight size={17} />}
           </button>
         </form>
 
-        <p className="login-footnote">
-          Your next great movie night awaits.
-        </p>
+<p className="login-footnote">
+  {authMode === 'login'
+    ? "Don't have an account?"
+    : 'Already have an account?'}
+  {' '}
+  <button
+    type="button"
+    className="text-link"
+    onClick={() => {
+      setAuthMode(authMode === 'login' ? 'register' : 'login');
+      setLoginError('');
+    }}
+  >
+    {authMode === 'login' ? 'Create account' : 'Login'}
+  </button>
+</p>
+       
       </div>
     </section>
   </div>
