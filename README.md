@@ -1,3 +1,11 @@
+
+## Project Documentation
+
+You can read the complete project documentation here:
+
+[📄 View iMovies Project Documentation (PDF)](./iMovies_Project_Documentation.pdf)
+
+
 # iMovies — Movie Ticket Booking Made Easy
 
 A MERN starter project with a separate React frontend (`client/`) and Express/MongoDB backend (`server/`).
